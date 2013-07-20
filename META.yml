@@ -1,0 +1,43 @@
+---
+abstract: 'CSRF Defender Plugin for Nephia'
+author:
+  - 'papix <mail@papix.net>'
+build_requires:
+  Plack::Builder: 0
+  Plack::Test: 0
+  Test::More: 0.98
+  Test::Requires: 0
+  Test::WWW::Mechanize::PSGI: 0
+configure_requires:
+  CPAN::Meta: 0
+  CPAN::Meta::Prereqs: 0
+  Module::Build: 0.38
+dynamic_config: 0
+generated_by: 'Minilla/v0.5.5, CPAN::Meta::Converter version 2.131560'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Nephia-Plugin-CSRFDefender
+no_index:
+  directory:
+    - t
+    - xt
+    - inc
+    - share
+    - eg
+    - examples
+    - author
+provides:
+  Nephia::Plugin::CSRFDefender:
+    file: lib/Nephia/Plugin/CSRFDefender.pm
+    version: 0.01
+requires:
+  Nephia: 0.32
+  Nephia::Plugin::PlackSession: 0
+  perl: 5.008005
+resources:
+  bugtracker: https://github.com/papix/Nephia-Plugin-CSRFDefender/issues
+  homepage: https://github.com/papix/Nephia-Plugin-CSRFDefender
+  repository: git://github.com/papix/Nephia-Plugin-CSRFDefender.git
+version: 0.01
