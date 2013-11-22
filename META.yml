@@ -13,7 +13,7 @@ configure_requires:
   CPAN::Meta::Prereqs: 0
   Module::Build: 0.38
 dynamic_config: 0
-generated_by: 'Minilla/v0.5.5, CPAN::Meta::Converter version 2.131560'
+generated_by: 'Minilla/v0.9.0, CPAN::Meta::Converter version 2.131560'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -28,16 +28,17 @@ no_index:
     - eg
     - examples
     - author
+    - builder
 provides:
   Nephia::Plugin::CSRFDefender:
     file: lib/Nephia/Plugin/CSRFDefender.pm
-    version: 0.01
+    version: 0.80
 requires:
-  Nephia: 0.32
-  Nephia::Plugin::PlackSession: 0
+  Nephia: 0.82
+  Nephia::Plugin::PlackSession: 0.80
   perl: 5.008005
 resources:
-  bugtracker: https://github.com/papix/Nephia-Plugin-CSRFDefender/issues
-  homepage: https://github.com/papix/Nephia-Plugin-CSRFDefender
-  repository: git://github.com/papix/Nephia-Plugin-CSRFDefender.git
-version: 0.01
+  bugtracker: https://github.com/nephia/Nephia-Plugin-CSRFDefender/issues
+  homepage: https://github.com/nephia/Nephia-Plugin-CSRFDefender
+  repository: git://github.com/nephia/Nephia-Plugin-CSRFDefender.git
+version: 0.80

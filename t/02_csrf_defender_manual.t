@@ -5,7 +5,7 @@ use Test::Requires 'Test::WWW::Mechanize::PSGI', 'Plack::Session';
 use Plack::Test;
 use Plack::Builder;
 
-our $COMMIT;
+my $COMMIT;
 my $form_html = <<'...';
 <!doctype html>
 <html>
@@ -20,41 +20,42 @@ my $form_html = <<'...';
     package MyApp;
     use Nephia plugins => [
         'CSRFDefender' => { no_validate_hook => 1 },
-        'PlackSession'
+        'PlackSession',
+        'Dispatch',
     ];
 
-    get '/form' => sub {
-        return [
-            200, [], [$form_html],
-        ];
-    };
-    post '/do' => sub {
-        $COMMIT++;
-        return res {
-            redirect('/finished');
-        }
-    };
-    post '/do2' => sub {
-        if (validate_csrf()) {
+    app {
+        get '/form' => sub {
             return [
-                200, [], ['valid token'],
+                200, [], [$form_html],
             ];
-        } else {
+        };
+        post '/do' => sub {
+            $COMMIT++;
+            return redirect('/finished');
+        };
+        post '/do2' => sub {
+            if (validate_csrf()) {
+                return [
+                    200, [], ['valid token'],
+                ];
+            } else {
+                return [
+                    403, [], ['denied'],
+                ];
+            }
+        };
+        get '/finished' => sub {
             return [
-                403, [], ['denied'],
-            ];
-        }
-    };
-    get '/finished' => sub {
-        return [
-            200, [], ['finished'],
-        ]
-    };
-    get '/get_csrf_defender_token' => sub {
-        return [
-            200, [], [get_csrf_defender_token()],
-        ]
-    };
+                200, [], ['finished'],
+            ]
+        };
+        get '/get_csrf_defender_token' => sub {
+            return [
+                200, [], [get_csrf_defender_token()],
+            ]
+        };
+    }
 }
 
 my $app = builder {
@@ -62,8 +63,8 @@ my $app = builder {
     MyApp->run();
 };
 
+$COMMIT = 0;
 subtest 'success case' => sub {
-    local $COMMIT = 0;
     my $mech = Test::WWW::Mechanize::PSGI->new(
         app => $app,
     );
@@ -74,20 +75,20 @@ subtest 'success case' => sub {
     is $COMMIT, 1;
 };
 
+$COMMIT = 0;
 subtest 'there is no validation' => sub {
-    local $COMMIT = 0;
     test_psgi
         app => $app,
         client => sub {
             my $cb = shift;
             my $res = $cb->(HTTP::Request->new(POST => 'http://localhost/do'));
-            is $res->code, '302';
+            is $res->code, '303';
             is $COMMIT, 1;
         };
 };
 
+$COMMIT = 0;
 subtest 'but you can validate manually' => sub {
-    local $COMMIT = 0;
     test_psgi
         app => $app,
         client => sub {

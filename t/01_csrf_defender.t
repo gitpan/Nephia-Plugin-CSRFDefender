@@ -20,30 +20,31 @@ my $form_html = <<'...';
     package MyApp;
     use Nephia plugins => [
         'CSRFDefender' => {},
-        'PlackSession'
+        'PlackSession',
+        'Dispatch',
     ];
 
-    get '/form' => sub {
-        return [
-            200, [], [$form_html],
-        ];
-    };
-    post '/do' => sub {
-        $COMMIT++;
-        return res {
-            redirect('/finished');
-        }
-    };
-    get '/finished' => sub {
-        return [
-            200, [], ['finished'],
-        ]
-    };
-    get '/get_csrf_defender_token' => sub {
-        return [
-            200, [], [get_csrf_defender_token()],
-        ]
-    };
+    app {
+        get '/form' => sub {
+            return [
+                200, [], [$form_html],
+            ];
+        };
+        post '/do' => sub {
+            $COMMIT++;
+            return redirect('/finished');
+        };
+        get '/finished' => sub {
+            return [
+                200, [], ['finished'],
+            ]
+        };
+        get '/get_csrf_defender_token' => sub {
+            return [
+                200, [], [get_csrf_defender_token()],
+            ]
+        };
+    }
 }
 
 my $app = builder {

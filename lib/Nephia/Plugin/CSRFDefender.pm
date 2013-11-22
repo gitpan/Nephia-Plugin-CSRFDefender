@@ -2,9 +2,9 @@ package Nephia::Plugin::CSRFDefender;
 use 5.008005;
 use strict;
 use warnings;
+use parent 'Nephia::Plugin';
 
-our $VERSION = "0.01";
-our @EXPORT = qw/get_csrf_defender_token validate_csrf/;
+our $VERSION = "0.80";
 
 our $ERROR_HTML = <<'...';
 <!doctype html>
@@ -21,26 +21,56 @@ our $ERROR_HTML = <<'...';
 </html>
 ...
 
-sub get_csrf_defender_token {
-    my $self = shift;
-    my $app  = context('app');
+sub new {
+    my ($class, %opts) = @_;
+    my $self = $class->SUPER::new(%opts);
+    my $app = $self->app;
+    $app->action_chain->prepend(CSRFDefender_Before => $self->can('_before_action'));
+    $app->action_chain->append(CSRFDefender_After => $self->can('_process_content'));
+    return $self;
+}
 
-    if ( my $token = $app->session->get('csrf_token') ) {
+sub exports {
+    qw/ get_csrf_defender_token validate_csrf /;
+}
+
+sub get_csrf_defender_token {
+    my ($self, $context) = @_;
+    return sub {
+        _get_csrf_defender_token($self->app);
+    };
+}
+
+sub validate_csrf {
+    my ($self, $context) = @_;
+    return sub {
+        _validate_csrf($self->app);
+    };
+}
+
+sub _get_csrf_defender_token {
+    my ($app) = @_;
+    
+    my $session = $app->dsl('session')->();
+
+    if ( my $token = $session->get('csrf_token') ) {
         $token;
     } else {
         $token = generate_token();
-        $app->session->set('csrf_token' => $token);
+        $session->set('csrf_token' => $token);
         $token;
     }
 }
 
-sub validate_csrf {
-    my $req = context('req');
-    my $app = context('app');
-
-    if ( $req->env->{REQUEST_METHOD} eq 'POST' ) {
+sub _validate_csrf {
+    my ($app) = @_;
+    
+    my $session = $app->dsl('session')->();
+    my $req     = $app->dsl('req')->();
+    
+    if ( $req->{env}->{REQUEST_METHOD} eq 'POST' ) {
         my $r_token = $req->param('csrf_token');
-        my $session_token = $app->session->get('csrf_token');
+        my $session_token = $session->get('csrf_token');
         if ( !$r_token || !$session_token || ( $r_token ne $session_token ) ) {
             return 0;
         }
@@ -57,41 +87,47 @@ sub generate_token {
     return $ret;
 }
 
-sub before_action {
-    my ($env, $path_param, @chain_of_actions) = @_;
-    my $opt = plugin_config();
+sub _before_action {
+    my ($app, $context) = @_;
+    my $obj = $app->loaded_plugins->fetch('Nephia::Plugin::CSRFDefender');
 
-    unless ($opt->{no_validate_hook}) {
-        if (! validate_csrf()) {
-            return [
+    unless ($obj->{no_validate_hook}) {
+        if (!_validate_csrf($app)) {
+            return ($context, Nephia::Response->new(
                 403,
                 [
                     'Content-Type'   => 'text/html',
                     'Content-Length' => length($ERROR_HTML)
                 ],
                 [ $ERROR_HTML ],
-            ];
+            ));
         }
     }
 
-    my $next = shift @chain_of_actions;
-    $next->($env, $path_param, @chain_of_actions);
+    return $context;
 }
 
-sub process_content {
-    my $content = shift;
-    my $opt = plugin_config();
+sub _process_content {
+    my ($app, $context) = @_;
 
-    my $form_regexp = $opt->{post_only} ? qr{<form\s*.*?\s*method=['"]?post['"]?\s*.*?>}is : qr{<form\s*.*?>}is;
+    my $res  = $context->get('res');
+    my $body = $res->{body}->[0]; 
+    my $obj  = $app->loaded_plugins->fetch('Nephia::Plugin::CSRFDefender');
 
-    if (defined $content) {
-        $content =~ s!($form_regexp)!qq{$1\n<input type="hidden" name="csrf_token" value="}.get_csrf_defender_token().qq{" />}!ge;
+    my $form_regexp = $obj->{post_only} ? qr{<form\s*.*?\s*method=['"]?post['"]?\s*.*?>}is : qr{<form\s*.*?>}is;
+   
+    if (defined $body) {
+        $body =~ s!($form_regexp)!qq{$1\n<input type="hidden" name="csrf_token" value="}._get_csrf_defender_token($app).qq{" />}!ge;
     }
 
-    return $content;
+    $res->{body}->[0] = $body;
+    $context->set('res' => $res);
+
+    return $context;
 }
 
 1;
+
 __END__
 
 =encoding utf8
@@ -102,7 +138,7 @@ Nephia::Plugin::CSRFDefender - CSRF Defender Plugin for Nephia
 
 =head1 SYNOPSIS
 
-    package MyApp.pm;
+    package MyApp;
     use strict;
     use warnings;
     use Nephia plugins => [

@@ -4,7 +4,7 @@ Nephia::Plugin::CSRFDefender - CSRF Defender Plugin for Nephia
 
 # SYNOPSIS
 
-    package MyApp.pm;
+    package MyApp;
     use strict;
     use warnings;
     use Nephia plugins => [
