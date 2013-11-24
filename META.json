@@ -50,6 +50,7 @@
       },
       "test" : {
          "requires" : {
+            "Nephia::Plugin::Dispatch" : "0",
             "Plack::Builder" : "0",
             "Plack::Test" : "0",
             "Test::More" : "0.98",
@@ -61,7 +62,7 @@
    "provides" : {
       "Nephia::Plugin::CSRFDefender" : {
          "file" : "lib/Nephia/Plugin/CSRFDefender.pm",
-         "version" : "0.80"
+         "version" : "0.81"
       }
    },
    "release_status" : "stable",
@@ -75,5 +76,5 @@
          "web" : "https://github.com/nephia/Nephia-Plugin-CSRFDefender"
       }
    },
-   "version" : "0.80"
+   "version" : "0.81"
 }
